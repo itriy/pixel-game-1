@@ -1,12 +1,13 @@
 export default defineNitroConfig({
+  compatibilityDate: '2026-02-22',
   srcDir: '.',
   publicAssets: [
     {
       baseURL: '/',
-      dir: 'public'
-    }
+      dir: 'public',
+    },
   ],
   devServer: {
-    watch: ['routes/**/*', 'public/**/*']
-  }
+    watch: ['routes/**/*', 'public/**/*'],
+  },
 });

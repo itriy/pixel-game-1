@@ -6,13 +6,31 @@
   "scripts": {
     "dev": "nitro dev",
     "build": "nitro build",
-    "preview": "node .output/server/index.mjs"
+    "preview": "node .output/server/index.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "validate": "pnpm lint && pnpm format:check && pnpm typecheck"
   },
-  "keywords": ["games", "pixijs", "nitro"],
+  "keywords": [
+    "games",
+    "pixijs",
+    "nitro"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.24.0",
   "devDependencies": {
-    "nitropack": "^2.13.1"
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.3.0",
+    "eslint": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "nitropack": "^2.13.1",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0"
   }
 }

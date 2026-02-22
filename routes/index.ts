@@ -136,14 +136,13 @@ export default defineEventHandler(() => {
                 <span class="badge">Скоро</span>
             </div>
 
-            <div class="game-card coming-soon">
+            <a href="/games/tetris" class="game-card">
                 <div class="game-icon">🧩</div>
                 <div class="game-title">Tetris</div>
                 <div class="game-description">
                     Складайте падаючі блоки в лінії та набирайте очки!
                 </div>
-                <span class="badge">Скоро</span>
-            </div>
+            </a>
         </div>
     </div>
 </body>
