@@ -127,14 +127,13 @@ export default defineEventHandler(() => {
                 </div>
             </a>
 
-            <div class="game-card coming-soon">
+            <a href="/games/space-invaders" class="game-card">
                 <div class="game-icon">👾</div>
                 <div class="game-title">Space Invaders</div>
                 <div class="game-description">
                     Рятуйте планету від інопланетного вторгнення!
                 </div>
-                <span class="badge">Скоро</span>
-            </div>
+            </a>
 
             <a href="/games/tetris" class="game-card">
                 <div class="game-icon">🧩</div>
