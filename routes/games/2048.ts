@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+export default defineEventHandler(() => {
+  return `<!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +10,7 @@
             margin: 0;
             padding: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -45,7 +47,7 @@
             font-size: 16px;
         }
 
-        button {
+        button, .back-button {
             margin-top: 15px;
             padding: 12px 30px;
             font-size: 18px;
@@ -55,14 +57,18 @@
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transition: all 0.3s;
+            text-decoration: none;
+            color: #333;
+            display: inline-block;
+            margin: 15px 10px 0;
         }
 
-        button:hover {
+        button:hover, .back-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0,0,0,0.3);
         }
 
-        button:active {
+        button:active, .back-button:active {
             transform: translateY(0);
         }
     </style>
@@ -75,10 +81,14 @@
         <div id="controls">
             Використовуйте стрілки ←↑→↓ для гри
         </div>
-        <button id="restart-btn">Нова гра</button>
+        <div>
+            <a href="/" class="back-button">← Назад до меню</a>
+            <button id="restart-btn">Нова гра</button>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
-    <script src="./game.js"></script>
+    <script src="/games/2048/game.js"></script>
 </body>
-</html>
+</html>`;
+});

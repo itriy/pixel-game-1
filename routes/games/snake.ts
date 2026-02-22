@@ -1,18 +1,20 @@
-<!DOCTYPE html>
+export default defineEventHandler(() => {
+  return `<!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2048 - PixiJS Game</title>
+    <title>Змійка - PixiJS Game</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
             font-family: 'Arial', sans-serif;
         }
 
@@ -45,7 +47,7 @@
             font-size: 16px;
         }
 
-        button {
+        button, .back-button {
             margin-top: 15px;
             padding: 12px 30px;
             font-size: 18px;
@@ -55,30 +57,47 @@
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transition: all 0.3s;
+            text-decoration: none;
+            color: #333;
+            display: inline-block;
+            margin: 15px 10px 0;
         }
 
-        button:hover {
+        button:hover, .back-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0,0,0,0.3);
         }
 
-        button:active {
+        button:active, .back-button:active {
             transform: translateY(0);
+        }
+
+        #game-status {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+            min-height: 30px;
         }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <h1>2048</h1>
+        <h1>🐍 Змійка</h1>
         <div id="score">Рахунок: <span id="score-value">0</span></div>
+        <div id="game-status"></div>
         <div id="gameCanvas"></div>
         <div id="controls">
-            Використовуйте стрілки ←↑→↓ для гри
+            Використовуйте стрілки ←↑→↓ або WASD для керування
         </div>
-        <button id="restart-btn">Нова гра</button>
+        <div>
+            <a href="/" class="back-button">← Назад до меню</a>
+            <button id="restart-btn">Нова гра</button>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
-    <script src="./game.js"></script>
+    <script src="/games/snake/game.js"></script>
 </body>
-</html>
+</html>`;
+});
