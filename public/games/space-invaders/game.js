@@ -490,7 +490,11 @@ class SpaceInvadersGame {
     document.getElementById('game-status').textContent = '🎉 Рівень пройдено!';
 
     setTimeout(() => {
-      if (confirm(`Рівень ${this.level - 1} пройдено!\nРахунок: ${this.score}\n\nПродовжити до рівня ${this.level}?`)) {
+      if (
+        confirm(
+          `Рівень ${this.level - 1} пройдено!\nРахунок: ${this.score}\n\nПродовжити до рівня ${this.level}?`
+        )
+      ) {
         this.nextLevel();
       } else {
         this.restart();
