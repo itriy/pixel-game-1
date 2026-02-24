@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Dice — Інтерактивна Гра</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap');
+  :root{--bg:#0a0a0f;--surface:#13131d;--border:#2a2a3a;--gold:#c9a84c;--gold-dim:#8a7333;--text:#d4cfc0;--text-dim:#7a7568;--red:#c44;--green:#4a4}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'IM Fell English',serif;min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(201,168,76,.03) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(139,32,32,.04) 0%,transparent 50%);pointer-events:none}
+  .app{position:relative;z-index:1}
+
+  header{text-align:center;padding:2rem 1rem 1.2rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(201,168,76,.05) 0%,transparent 100%)}
+  header h1{font-family:'Cinzel Decorative',serif;font-size:clamp(1.8rem,4vw,3rem);color:var(--gold);letter-spacing:.08em;text-shadow:0 0 40px rgba(201,168,76,.2);margin-bottom:.3rem}
+  header p{font-size:1rem;color:var(--text-dim);font-style:italic}
+
+  .controls{max-width:900px;margin:1.2rem auto;padding:0 1rem;display:flex;flex-wrap:wrap;gap:.7rem;align-items:end;justify-content:center}
+  .control-group{display:flex;flex-direction:column;gap:.25rem}
+  .control-group label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold-dim);letter-spacing:.1em;text-transform:uppercase}
+  .control-group select,.control-group input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.45rem .7rem;font-family:'IM Fell English',serif;font-size:.9rem;border-radius:2px;cursor:pointer;min-width:110px}
+  .btn{font-family:'Cinzel',serif;font-size:.8rem;letter-spacing:.08em;padding:.5rem 1.2rem;border:1px solid var(--gold-dim);background:transparent;color:var(--gold);cursor:pointer;transition:all .2s;text-transform:uppercase}
+  .btn:hover{background:var(--gold);color:var(--bg);box-shadow:0 0 20px rgba(201,168,76,.2)}
+  .btn-primary{background:var(--gold-dim);color:var(--bg);border-color:var(--gold);font-weight:700}
+  .btn-primary:hover{background:var(--gold)}
+
+  /* ===== GAME LAYOUT ===== */
+  .game-area{display:flex;gap:1.2rem;max-width:1400px;margin:1.2rem auto;padding:0 1rem;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+
+  /* Map sheet */
+  .map-sheet{background:#fff;color:#111;padding:18px 22px 14px;box-shadow:0 4px 40px rgba(0,0,0,.5);flex-shrink:0}
+  .map-title{text-align:center;font-family:'Cinzel Decorative',serif;font-size:17px;font-weight:700;color:#111;margin-bottom:2px}
+  .map-subtitle{text-align:center;font-family:'IM Fell English',serif;font-size:10px;color:#888;margin-bottom:8px}
+  .dungeon-area{display:flex;justify-content:center}
+  .dungeon-grid-wrap{display:inline-block;position:relative}
+  .col-labels{display:grid;gap:0;margin-bottom:2px;padding-left:18px}
+  .col-labels span{text-align:center;font:9px/1 monospace;color:#aaa}
+  .row-label{position:absolute;right:100%;top:50%;transform:translateY(-50%);font:9px/1 monospace;color:#aaa;padding-right:4px;white-space:nowrap}
+
+  .dungeon-grid{display:grid;gap:0;border:3px solid #222;position:relative}
+  .cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:visible;border-right:3px solid #222;border-bottom:3px solid #222;transition:background .15s}
+  .cell.col-last{border-right:none}
+  .cell.row-last{border-bottom:none}
+
+  /* Doors */
+  .cell .dr{position:absolute;right:-3px;top:50%;transform:translateY(-50%);width:5px;height:30%;z-index:5;border-top:.5px solid #bbb;border-bottom:.5px solid #bbb}
+  .cell .dd{position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);width:30%;height:5px;z-index:5;border-left:.5px solid #bbb;border-right:.5px solid #bbb}
+  .floor-dungeon .dr,.floor-dungeon .dd{background:#faf8f0}
+  .floor-cave .dr,.floor-cave .dd{background:#ede4d4}
+  .floor-castle .dr,.floor-castle .dd{background:#eae5d8}
+  .floor-garden .dr,.floor-garden .dd{background:#eaf2e0}
+  .floor-crypt .dr,.floor-crypt .dd{background:#e4e0da}
+
+  /* Floor themes */
+  .cell.floor-dungeon{background:#faf8f0;background-image:linear-gradient(#ddd 1px,transparent 1px),linear-gradient(90deg,#ddd 1px,transparent 1px);background-size:25% 25%}
+  .cell.floor-cave{background:#ede4d4}
+  .cell.floor-castle{background:linear-gradient(135deg,#f2ede2 25%,#e2dcd0 25%,#e2dcd0 50%,#f2ede2 50%,#f2ede2 75%,#e2dcd0 75%);background-size:50% 50%}
+  .cell.floor-garden{background:#eaf2e0}
+  .cell.floor-crypt{background:#e4e0da}
+  .cell.cell-boss{background:rgba(40,0,0,.08)!important}
+
+  .cell-icon{font-size:min(4.5vw,28px);line-height:1;margin-bottom:1px}
+  .cell-name{font-size:clamp(6px,1.2vw,10px);font-weight:700;line-height:1.1;text-align:center}
+  .cell-stats{font-size:clamp(5px,1vw,9px);color:#444;font-weight:600;line-height:1.1;text-align:center}
+  .cell-empty{color:#ccc;font-style:italic;font-size:clamp(5px,.9vw,7px)}
+
+  /* Player token */
+  .cell.has-player{outline:3px solid #c9a84c;outline-offset:-3px;z-index:10}
+  .player-token{position:absolute;top:2px;left:2px;font-size:min(3vw,20px);z-index:11;filter:drop-shadow(0 0 4px rgba(0,0,0,.6));animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+
+  /* Visited & cleared */
+  .cell.visited-cell{opacity:.6}
+  .cell.cleared-cell .cell-icon,.cell.cleared-cell .cell-name,.cell.cleared-cell .cell-stats{opacity:.15;text-decoration:line-through}
+
+  /* Fog of war */
+  .cell.fog{background:#1a1a2e!important;background-image:none!important}
+  .cell.fog *:not(.row-label){display:none!important}
+  .cell.fog .dr,.cell.fog .dd{display:none!important}
+  .cell.fog-adjacent{background:#2a2a3e!important;background-image:none!important}
+  .cell.fog-adjacent .cell-icon{opacity:.4}
+  .cell.fog-adjacent .cell-name,.cell.fog-adjacent .cell-stats,.cell.fog-adjacent .cell-empty{display:none!important}
+  .cell.fog-adjacent .dr,.cell.fog-adjacent .dd{opacity:.3}
+
+  /* ===== HUD ===== */
+  .hud{background:var(--surface);border:1px solid var(--border);padding:1.2rem;width:340px;border-radius:4px;flex-shrink:0}
+  .hud h2{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:1.3rem;text-align:center;margin-bottom:.8rem}
+
+  .hp-bar{background:rgba(255,255,255,.03);border:1px solid var(--border);padding:.6rem;border-radius:3px;margin-bottom:.5rem}
+  .hp-bar .lbl{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;display:flex;justify-content:space-between}
+  .hp-track{display:flex;gap:2px}
+  .hp-pip{flex:1;height:16px;border:1px solid var(--border);border-radius:2px;transition:background .3s}
+  .hp-pip.full{background:#c44;border-color:#a33}
+
+  .armor-bar{background:rgba(255,255,255,.03);border:1px solid var(--border);padding:.6rem;border-radius:3px;margin-bottom:.5rem}
+  .armor-bar .lbl{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;display:flex;justify-content:space-between}
+  .armor-track{display:flex;gap:2px}
+  .armor-pip{flex:1;height:14px;border:1px solid var(--border);border-radius:2px;transition:background .3s}
+  .armor-pip.full{background:#4a8fbf;border-color:#3a7aa5}
+  .armor-pip.empty{background:rgba(74,143,191,.12);border-color:rgba(74,143,191,.25)}
+
+  .hud-stats{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.8rem}
+  .hud-stat{background:rgba(255,255,255,.03);border:1px solid var(--border);padding:.5rem;border-radius:3px;text-align:center}
+  .hud-stat .val{font-family:'Cinzel Decorative',serif;font-size:1.5rem;color:var(--gold);display:block}
+  .hud-stat .lbl{font-size:.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em}
+
+  /* Dice */
+  .dice-area{text-align:center;margin-bottom:.8rem;padding:.8rem;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:4px}
+  .dice-result{font-size:3.2rem;margin-bottom:.4rem;min-height:3.2rem;line-height:1;font-family:'Cinzel Decorative',serif;color:var(--gold)}
+  .dice-label{font-size:.85rem;color:var(--text-dim);margin-bottom:.5rem;min-height:1.2em}
+  .dice-btn{font-family:'Cinzel',serif;font-size:1.05rem;letter-spacing:.1em;padding:.7rem 1.5rem;border:2px solid var(--gold);background:var(--gold-dim);color:var(--bg);cursor:pointer;text-transform:uppercase;font-weight:700;border-radius:4px;transition:all .15s;width:100%}
+  .dice-btn:hover:not(:disabled){background:var(--gold);transform:scale(1.03)}
+  .dice-btn:active:not(:disabled){transform:scale(.97)}
+  .dice-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .dice-btn.glow{animation:btnGlow 1s ease-in-out infinite}
+  @keyframes btnGlow{0%,100%{box-shadow:0 0 8px rgba(201,168,76,.3)}50%{box-shadow:0 0 20px rgba(201,168,76,.7)}}
+
+  /* Log */
+  .log{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:3px;padding:.5rem;font-size:.88rem;line-height:1.5}
+  .log-entry{padding:3px 4px;border-bottom:1px solid rgba(255,255,255,.03)}
+  .log .dmg{color:#e66}
+  .log .heal{color:#6c6}
+  .log .loot{color:var(--gold)}
+  .log .info{color:var(--text-dim)}
+  .log .win{color:var(--gold);font-weight:700;font-size:1.1rem}
+  .log .luck{color:#d4a}
+
+  .move-hint{text-align:center;color:var(--text-dim);font-size:.8rem;margin-top:.6rem;font-style:italic}
+
+  /* D-pad mobile */
+  .dpad{display:none;margin-top:.6rem}
+  @media(max-width:960px){
+    .dpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:3px;justify-content:center}
+    .dpad button{font-size:1.3rem;background:var(--surface);border:1px solid var(--border);color:var(--gold);border-radius:4px;cursor:pointer}
+    .dpad button:active{background:var(--gold-dim)}
+    .dpad .empty{border:none;background:none}
+  }
+
+  /* Game over */
+  .game-over{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+  .game-over h2{font-family:'Cinzel Decorative',serif;font-size:2.5rem}
+  .game-over p{font-size:1.1rem;color:var(--text-dim);text-align:center}
+  .game-over.hidden{display:none}
+  .game-over.win h2{color:var(--gold)}
+  .game-over.lose h2{color:var(--red)}
+
+  .seed-display{font-family:'Cinzel',serif;color:var(--text-dim);font-size:.75rem;margin-top:.3rem;text-align:center}
+  footer{text-align:center;padding:1.2rem;color:var(--text-dim);font-size:.7rem;border-top:1px solid var(--border);margin-top:1rem}
+
+  @media print{
+    body{background:#fff!important;color:#111!important}
+    body::before,header,.controls,.hud,.seed-display,footer,.game-over,.dpad{display:none!important}
+    .game-area{margin:0;padding:0}
+    .map-sheet{box-shadow:none;padding:3mm}
+    .dungeon-grid{border-width:2px}.cell{border-width:2px}
+    .player-token{display:none}.cell.has-player{outline:none}
+    @page{margin:4mm;size:A4 landscape}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>⚔ Dungeon Dice ⚔</h1>
+    <p>Згенеруй карту та пройди підземелля!</p>
+  </header>
+  <div class="controls">
+    <div class="control-group"><label>Тема</label><select id="theme"><option value="dungeon">🏰 Підземелля</option><option value="cave">🪨 Печери</option><option value="castle">🏯 Замок</option><option value="garden">🌿 Сад</option><option value="crypt">💀 Крипта</option></select></div>
+    <div class="control-group"><label>Розмір</label><select id="size"><option value="5">5×5</option><option value="6">6×6</option><option value="7">7×7</option><option value="8" selected>8×8</option><option value="9">9×9</option><option value="10">10×10</option></select></div>
+    <div class="control-group"><label>Складність</label><select id="difficulty"><option value="easy">Легка</option><option value="normal" selected>Звичайна</option><option value="hard">Важка</option></select></div>
+    <div class="control-group"><label>Seed</label><input type="number" id="seed" placeholder="Рандом" min="1" max="99999"></div>
+    <button class="btn btn-primary" onclick="newGame()">Нова Гра</button>
+  </div>
+
+  <div class="game-area">
+    <div class="map-sheet" id="mapSheet"></div>
+    <div class="hud">
+      <h2>🧙 Герой</h2>
+      <div class="hp-bar">
+        <div class="lbl"><span>❤ HP</span><span id="hpText">10/10</span></div>
+        <div class="hp-track" id="hpTrack"></div>
+      </div>
+      <div class="armor-bar" id="armorBarWrap" style="display:none">
+        <div class="lbl"><span>🛡 Броня</span><span id="armorText">0</span></div>
+        <div class="armor-track" id="armorTrack"></div>
+      </div>
+      <div class="hud-stats">
+        <div class="hud-stat" style="grid-column:1/-1;text-align:left;display:flex;align-items:center;gap:.6rem">
+          <span id="sWpnIcon" style="font-size:1.8rem">🪵</span>
+          <div><span class="val" id="sWpn" style="font-size:1.1rem;text-align:left">Палиця</span><span class="lbl">⚔ Зброя (сила: <span id="sAtk">0</span>)</span></div>
+        </div>
+        <div class="hud-stat"><span class="val" id="sGold">0</span><span class="lbl">💰 Золото</span></div>
+        <div class="hud-stat"><span class="val" id="sPot">0</span><span class="lbl">🧪 Зілля</span></div>
+        <div class="hud-stat" style="grid-column:1/-1"><span class="val" id="sLuck">0</span><span class="lbl">🍀 Вдача (шанс +1 урон)</span></div>
+      </div>
+      <div class="dice-area">
+        <div class="dice-label" id="diceLabel">Рухайся стрілками ↑↓←→</div>
+        <div class="dice-result" id="diceResult">🎲</div>
+        <button class="dice-btn" id="diceBtn" onclick="rollDice()" disabled>Кинути кубик</button>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="move-hint">↑↓←→ або WASD — рух | Space — кубик</div>
+      <div class="dpad">
+        <div class="empty"></div><button onclick="tryMove(-1,0)">↑</button><div class="empty"></div>
+        <button onclick="tryMove(0,-1)">←</button><button onclick="rollDice()">🎲</button><button onclick="tryMove(0,1)">→</button>
+        <div class="empty"></div><button onclick="tryMove(1,0)">↓</button><div class="empty"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-over hidden" id="gameOver">
+    <h2 id="goTitle"></h2>
+    <p id="goText"></p>
+    <button class="btn btn-primary" onclick="document.getElementById('gameOver').classList.add('hidden');newGame()">Грати знову</button>
+  </div>
+  <div class="seed-display" id="seedDisplay"></div>
+  <footer>Dungeon Dice — гра з кубиком у підземеллі</footer>
+</div>
+
+<script>
+// ========== RNG ==========
+class RNG{constructor(s){this.s=s%2147483647;if(this.s<=0)this.s+=2147483646}
+next(){this.s=(this.s*16807)%2147483647;return(this.s-1)/2147483646}
+int(a,b){return Math.floor(this.next()*(b-a+1))+a}
+pick(a){return a[this.int(0,a.length-1)]}
+bool(p=.5){return this.next()<p}}
+
+// ========== CONSTANTS ==========
+const R={EMPTY:0,NORMAL:1,MONSTER:2,CHEST:3,TRAP:4,BOSS:5,START:6,LOOT:7,HEAL:8};
+const DICE=['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+const MONSTERS={
+  dungeon:[{name:'Скелет',hp:2,icon:'💀'},{name:'Гоблін',hp:2,icon:'👺'},{name:'Орк',hp:3,icon:'👹'},{name:'Слизняк',hp:1,icon:'🟢'},{name:'Кажан',hp:1,icon:'🦇'}],
+  cave:[{name:'Павук',hp:2,icon:'🕷'},{name:'Троль',hp:4,icon:'👹'},{name:'Кажан',hp:1,icon:'🦇'},{name:'Вовк',hp:2,icon:'🐺'},{name:'Слизняк',hp:1,icon:'🟢'}],
+  castle:[{name:'Лицар',hp:3,icon:'⚔'},{name:'Привид',hp:2,icon:'👻'},{name:'Гаргулія',hp:3,icon:'🗿'},{name:'Страж',hp:2,icon:'💂'},{name:'Маг',hp:2,icon:'🧙'}],
+  garden:[{name:'Ент',hp:3,icon:'🌳'},{name:'Вовк',hp:2,icon:'🐺'},{name:'Фея',hp:1,icon:'🧚'},{name:'Змія',hp:2,icon:'🐍'},{name:'Жук',hp:1,icon:'🪲'}],
+  crypt:[{name:'Зомбі',hp:2,icon:'🧟'},{name:'Привид',hp:2,icon:'👻'},{name:'Скелет',hp:2,icon:'💀'},{name:'Ліч',hp:3,icon:'☠'},{name:'Мумія',hp:3,icon:'🧌'}]
+};
+const BOSSES={
+  dungeon:{name:'Дракон',hp:10,dmg:2,icon:'🐉'},
+  cave:{name:'Павук-Матка',hp:8,dmg:2,icon:'🕸'},
+  castle:{name:'Темний Лицар',hp:10,dmg:2,icon:'⚔'},
+  garden:{name:'Древній Ент',hp:8,dmg:2,icon:'🌲'},
+  crypt:{name:'Некромант',hp:12,dmg:3,icon:'💀'}
+};
+const TNAME={dungeon:'Підземелля',cave:'Печери',castle:'Замок',garden:'Сад',crypt:'Крипта'};
+
+// Weapon tiers — equipping REPLACES current weapon
+const WEAPONS=[
+  {name:'Палиця',icon:'🪵',atk:0,tier:0},
+  {name:'Іржавий меч',icon:'🗡️',atk:1,tier:1},
+  {name:'Сталевий меч',icon:'⚔️',atk:2,tier:2},
+  {name:'Вогняний меч',icon:'🔥',atk:3,tier:3},
+  {name:'Легендарний меч',icon:'⚡',atk:4,tier:4}
+];
+// Shield tiers — equipping REPLACES current shield, sets armor to shield value
+const SHIELDS=[
+  null, // no shield
+  {name:'Деревʼяний щит',icon:'🪵',armor:2,tier:1},
+  {name:'Залізний щит',icon:'🛡️',armor:4,tier:2},
+  {name:'Магічний щит',icon:'✨',armor:6,tier:3}
+];
+
+// ========== GAME STATE ==========
+let G=null;
+
+// ========== DUNGEON GEN ==========
+function genDungeon(rng,cols,rows,diff,theme){
+  const grid=Array.from({length:rows},()=>Array(cols).fill(0));
+  const data=Array.from({length:rows},()=>Array(cols).fill(null));
+  const doors=Array.from({length:rows},()=>Array.from({length:cols},()=>({r:false,d:false})));
+
+  // DFS maze
+  const vis=Array.from({length:rows},()=>Array(cols).fill(false));
+  const st=[[0,0]];vis[0][0]=true;
+  while(st.length){
+    const[cr,cc]=st[st.length-1],nb=[];
+    if(cr>0&&!vis[cr-1][cc])nb.push([cr-1,cc,'u']);
+    if(cr<rows-1&&!vis[cr+1][cc])nb.push([cr+1,cc,'d']);
+    if(cc>0&&!vis[cr][cc-1])nb.push([cr,cc-1,'l']);
+    if(cc<cols-1&&!vis[cr][cc+1])nb.push([cr,cc+1,'r']);
+    if(!nb.length){st.pop();continue}
+    const[nr,nc,dir]=rng.pick(nb);vis[nr][nc]=true;
+    if(dir==='r')doors[cr][cc].r=true;
+    else if(dir==='d')doors[cr][cc].d=true;
+    else if(dir==='l')doors[nr][nc].r=true;
+    else doors[nr][nc].d=true;
+    st.push([nr,nc]);
+  }
+  // Extra connections
+  for(let i=0;i<Math.floor(cols*rows*.25);i++){
+    const r=rng.int(0,rows-1),c=rng.int(0,cols-1);
+    if(rng.bool()&&c<cols-1)doors[r][c].r=true;
+    else if(r<rows-1)doors[r][c].d=true;
+  }
+
+  // BFS distance from start for scaling
+  const dist=Array.from({length:rows},()=>Array(cols).fill(-1));
+  dist[0][0]=0;
+  const bq=[[0,0]];let bi=0;
+  while(bi<bq.length){
+    const[br,bc]=bq[bi++];
+    const tryD=(nr,nc)=>{if(nr>=0&&nr<rows&&nc>=0&&nc<cols&&dist[nr][nc]===-1){dist[nr][nc]=dist[br][bc]+1;bq.push([nr,nc])}};
+    if(doors[br][bc].r)tryD(br,bc+1);
+    if(bc>0&&doors[br][bc-1].r)tryD(br,bc-1);
+    if(doors[br][bc].d)tryD(br+1,bc);
+    if(br>0&&doors[br-1][bc].d)tryD(br-1,bc);
+  }
+  const maxDist=Math.max(...bq.map(([r,c])=>dist[r][c]));
+
+  grid[0][0]=R.START;
+  grid[rows-1][cols-1]=R.BOSS;
+  const boss=BOSSES[theme];
+  data[rows-1][cols-1]={...boss,maxHp:boss.hp,armor:diff==='hard'?3:2};
+
+  const mCh=diff==='easy'?.18:diff==='hard'?.35:.25;
+  const tCh=diff==='easy'?.05:diff==='hard'?.12:.08;
+  const rng2=new RNG(rng.int(1,99999));
+  const mons=MONSTERS[theme];
+
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    if(grid[r][c])continue;
+    const v=rng.next();
+    const zone=maxDist>0?dist[r][c]/maxDist:0;
+
+    if(v<mCh){
+      grid[r][c]=R.MONSTER;
+      const m={...rng2.pick(mons)};
+      if(zone>.6){m.hp+=2;m.dmg=(m.dmg||1)+1;m.armor=rng2.int(1,2);m.name='💪 '+m.name}
+      else if(zone>.35){m.hp+=1;m.dmg=m.dmg||1;m.armor=rng2.bool(.4)?1:0}
+      else{m.dmg=m.dmg||1;m.armor=0}
+      m.maxHp=m.hp;
+      data[r][c]=m;
+    }
+    else if(v<mCh+tCh){
+      grid[r][c]=R.TRAP;
+      data[r][c]={dmg:zone>.6?3:2};
+    }
+    else if(v<mCh+tCh+.12)grid[r][c]=R.CHEST;
+    else if(v<mCh+tCh+.26){
+      grid[r][c]=R.LOOT;
+      const roll=rng2.next();
+      if(roll<.35){
+        // Weapon
+        const tier=zone>.65?rng2.int(2,3):zone>.3?rng2.int(1,2):1;
+        const w=WEAPONS[Math.min(tier,WEAPONS.length-1)];
+        data[r][c]={type:'weapon',lootTier:tier,...w};
+      }else if(roll<.65){
+        // Shield
+        const tier=zone>.65?rng2.int(2,3):zone>.3?rng2.int(1,2):1;
+        const s=SHIELDS[Math.min(tier,SHIELDS.length-1)];
+        data[r][c]={type:'shield',lootTier:tier,...s};
+      }else{
+        // Luck talisman
+        data[r][c]={type:'luck',icon:'🍀',name:'Талісман',desc:'🍀+1'};
+      }
+    }
+    else if(v<mCh+tCh+.38)grid[r][c]=R.HEAL;
+    else grid[r][c]=R.NORMAL;
+  }
+  return{grid,data,doors,cols,rows};
+}
+
+// ========== CAN MOVE ==========
+function canMove(dr,dc){
+  const{pr,pc,dun}=G,{doors,cols,rows}=dun;
+  const nr=pr+dr,nc=pc+dc;
+  if(nr<0||nr>=rows||nc<0||nc>=cols)return false;
+  if(dc===1)return doors[pr][pc].r;
+  if(dc===-1)return doors[pr][nc].r;
+  if(dr===1)return doors[pr][pc].d;
+  if(dr===-1)return doors[nr][pc].d;
+  return false;
+}
+
+// ========== RENDER GRID ==========
+function revealAround(){
+  // Reveal cells visible from player position (connected by door)
+  const{pr,pc,dun}=G,{doors,cols,rows}=dun;
+  G.revealed[pr][pc]=2; // 2=fully revealed
+  // Adjacent through doors
+  if(pc<cols-1&&doors[pr][pc].r&&G.revealed[pr][pc+1]<2) G.revealed[pr][pc+1]=Math.max(G.revealed[pr][pc+1],1);
+  if(pc>0&&doors[pr][pc-1].r&&G.revealed[pr][pc-1]<2) G.revealed[pr][pc-1]=Math.max(G.revealed[pr][pc-1],1);
+  if(pr<rows-1&&doors[pr][pc].d&&G.revealed[pr+1][pc]<2) G.revealed[pr+1][pc]=Math.max(G.revealed[pr+1][pc],1);
+  if(pr>0&&doors[pr-1][pc].d&&G.revealed[pr-1][pc]<2) G.revealed[pr-1][pc]=Math.max(G.revealed[pr-1][pc],1);
+}
+
+function renderGrid(){
+  revealAround();
+  const{dun,theme,pr,pc}=G;
+  const{grid,data,doors,cols,rows}=dun;
+
+  let h=`<div class="map-title">⚔ ${TNAME[theme]} ⚔</div>`;
+  h+=`<div class="map-subtitle">Seed: ${G.seed} • ${cols}×${rows} • ${G.diff==='easy'?'Легка':G.diff==='hard'?'Важка':'Звичайна'}</div>`;
+  h+='<div class="dungeon-area"><div class="dungeon-grid-wrap">';
+
+  const mx=Math.min(88,Math.floor(800/cols)),mn=Math.min(52,mx-6);
+  h+=`<div class="col-labels" style="grid-template-columns:repeat(${cols},1fr)">`;
+  for(let c=0;c<cols;c++)h+=`<span>${String.fromCharCode(65+c)}</span>`;
+  h+='</div>';
+  h+=`<div class="dungeon-grid" style="grid-template-columns:repeat(${cols},minmax(${mn}px,${mx}px));grid-template-rows:repeat(${rows},minmax(${mn}px,${mx}px))">`;
+
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const t=grid[r][c],cd=data[r][c];
+    const isP=r===pr&&c===pc;
+    const rev=G.revealed[r][c]; // 0=fog, 1=adjacent(dim), 2=revealed
+
+    let cls=`cell floor-${theme}`;
+    if(c===cols-1)cls+=' col-last';
+    if(r===rows-1)cls+=' row-last';
+
+    // Fog of war
+    if(rev===0){cls+=' fog'}
+    else if(rev===1){cls+=' fog-adjacent'}
+    else{
+      if(t===R.BOSS)cls+=' cell-boss';
+      if(isP)cls+=' has-player';
+      if(G.vis[r][c]&&!isP)cls+=' visited-cell';
+      if(G.clr[r][c])cls+=' cleared-cell';
+    }
+
+    let inn='';
+    if(c===0)inn+=`<span class="row-label">${r+1}</span>`;
+
+    if(rev>=1){
+      if(doors[r][c].r&&c<cols-1)inn+='<span class="dr"></span>';
+      if(doors[r][c].d&&r<rows-1)inn+='<span class="dd"></span>';
+    }
+    if(isP&&rev>=2)inn+='<span class="player-token">🧙</span>';
+
+    if(rev>=2){
+      switch(t){
+        case R.START:inn+='<span class="cell-icon">🚪</span><span class="cell-name">СТАРТ</span>';break;
+        case R.BOSS:inn+=`<span class="cell-icon">${cd.icon}</span><span class="cell-name">${cd.name}</span><span class="cell-stats">HP:${cd.hp}/${cd.maxHp}${cd.armor?' 🛡'+cd.armor:''}</span>`;break;
+        case R.MONSTER:inn+=`<span class="cell-icon">${cd.icon}</span><span class="cell-name">${cd.name}</span><span class="cell-stats">HP:${cd.hp}/${cd.maxHp}${cd.armor?' 🛡'+cd.armor:''}</span>`;break;
+        case R.CHEST:inn+='<span class="cell-icon">📦</span><span class="cell-name">СКРИНЯ</span>';break;
+        case R.TRAP:inn+='<span class="cell-icon">⚠️</span><span class="cell-name">ПАСТКА</span>';break;
+        case R.LOOT:inn+=`<span class="cell-icon">${cd.icon}</span><span class="cell-name">${cd.name}</span><span class="cell-stats">${cd.type==='weapon'?'⚔'+cd.atk:cd.type==='luck'?'🍀+1':'🛡+'+cd.armor}</span>`;break;
+        case R.HEAL:inn+='<span class="cell-icon">🧪</span><span class="cell-name">ЗІЛЛЯ</span><span class="cell-stats">+3 HP</span>';break;
+        case R.NORMAL:inn+='<span class="cell-empty">·</span>';break;
+      }
+    } else if(rev===1){
+      // Adjacent — show only icon dimly
+      switch(t){
+        case R.BOSS:inn+=`<span class="cell-icon">${cd.icon}</span>`;break;
+        case R.MONSTER:inn+=`<span class="cell-icon">${cd.icon}</span>`;break;
+        case R.CHEST:inn+='<span class="cell-icon">📦</span>';break;
+        case R.TRAP:inn+='<span class="cell-icon">❓</span>';break;
+        case R.LOOT:inn+=`<span class="cell-icon">${cd.icon}</span>`;break;
+        case R.HEAL:inn+='<span class="cell-icon">🧪</span>';break;
+        default:inn+='<span class="cell-icon">❓</span>';break;
+      }
+    }
+
+    h+=`<div class="${cls}">${inn}</div>`;
+  }
+  h+='</div></div></div>';
+  document.getElementById('mapSheet').innerHTML=h;
+}
+
+// ========== HUD ==========
+function updateHUD(){
+  document.getElementById('sWpn').textContent=G.weapon.name;
+  document.getElementById('sWpnIcon').textContent=G.weapon.icon;
+  document.getElementById('sAtk').textContent=G.weapon.atk;
+  document.getElementById('sGold').textContent=G.gold;
+  document.getElementById('sPot').textContent=G.pot;
+  document.getElementById('sLuck').textContent=G.luck;
+  document.getElementById('hpText').textContent=`${G.hp}/${G.maxHp}`;
+  let h='';
+  for(let i=0;i<G.maxHp;i++)h+=`<div class="hp-pip${i<G.hp?' full':''}"></div>`;
+  document.getElementById('hpTrack').innerHTML=h;
+  // Armor bar — like HP with empty pips
+  const aw=document.getElementById('armorBarWrap');
+  if(G.maxArmor>0){
+    aw.style.display='';
+    document.getElementById('armorText').textContent=`${G.armor}/${G.maxArmor}`;
+    let a='';
+    for(let i=0;i<G.maxArmor;i++)a+=`<div class="armor-pip${i<G.armor?' full':' empty'}"></div>`;
+    document.getElementById('armorTrack').innerHTML=a;
+  }else{
+    aw.style.display='none';
+  }
+}
+
+// ========== TAKE DAMAGE (armor absorbs first) ==========
+function addArmor(amount){
+  G.armor+=amount;
+  G.maxArmor=Math.max(G.maxArmor,G.armor);
+}
+
+function takeDmg(amount){
+  let remaining=amount;
+  const armorLost=Math.min(remaining,G.armor);
+  G.armor-=armorLost;
+  remaining-=armorLost;
+  G.hp-=remaining;
+  let msg=`−${amount}`;
+  if(armorLost>0&&remaining>0) msg+=` (🛡−${armorLost} ❤−${remaining})`;
+  else if(armorLost>0) msg+=` (🛡−${armorLost})`;
+  else msg+=` ❤`;
+  return msg;
+}
+
+// ========== LUCK CHECK ==========
+function checkLuck(){
+  if(G.luck<=0)return false;
+  // luck = % chance (e.g. luck 2 = 20% chance)
+  return Math.random()*10<G.luck;
+}
+
+function log(msg,cls='info'){
+  const el=document.getElementById('log');
+  el.innerHTML=`<div class="log-entry ${cls}">${msg}</div>`+el.innerHTML;
+}
+
+// ========== DICE ==========
+let _diceCb=null,_diceAnim=false;
+
+function enableDice(label,cb){
+  G.state='dice';
+  _diceCb=cb;
+  const btn=document.getElementById('diceBtn');
+  btn.disabled=false;
+  btn.classList.add('glow');
+  document.getElementById('diceLabel').textContent=label;
+}
+
+function disableDice(){
+  const btn=document.getElementById('diceBtn');
+  btn.disabled=true;
+  btn.classList.remove('glow');
+  document.getElementById('diceLabel').textContent='Рухайся стрілками ↑↓←→';
+}
+
+function rollDice(){
+  if(!_diceCb||_diceAnim||!G||G.state!=='dice')return;
+  _diceAnim=true;
+  const btn=document.getElementById('diceBtn'),disp=document.getElementById('diceResult');
+  btn.disabled=true;btn.classList.remove('glow');
+
+  let t=0;
+  const iv=setInterval(()=>{
+    disp.textContent=DICE[Math.floor(Math.random()*6)];
+    t++;
+    if(t>=14){
+      clearInterval(iv);
+      const val=Math.floor(Math.random()*6)+1;
+      disp.textContent=DICE[val-1]+' '+val;
+      _diceAnim=false;
+      const cb=_diceCb;_diceCb=null;
+      G.state='move';
+      disableDice();
+      cb(val);
+    }
+  },70);
+}
+
+// ========== ENTER CELL ==========
+function enterCell(){
+  const{pr:r,pc:c,dun}=G;
+  const t=dun.grid[r][c],cd=dun.data[r][c];
+  G.vis[r][c]=true;
+  G.revealed[r][c]=2;
+
+  if(G.clr[r][c]||t===R.START||t===R.NORMAL||t===R.EMPTY){renderGrid();return}
+
+  renderGrid();
+
+  switch(t){
+    case R.MONSTER:combat(r,c,cd,cd.dmg||1);break;
+    case R.BOSS:combat(r,c,cd,cd.dmg);break;
+    case R.TRAP:doTrap(r,c);break;
+    case R.CHEST:doChest(r,c);break;
+    case R.LOOT:doLoot(r,c,cd);break;
+    case R.HEAL:doHeal(r,c);break;
+  }
+}
+
+// ========== COMBAT ==========
+function combat(r,c,mon,dmg){
+  const isBoss=G.dun.grid[r][c]===R.BOSS;
+  log(`⚔ ${mon.name}! HP:${mon.hp}${mon.armor?' 🛡'+mon.armor:''} ${isBoss?'DMG:'+dmg:''}`,'dmg');
+  combatRound(r,c,mon,dmg);
+}
+
+function combatRound(r,c,mon,dmg){
+  if(mon.hp<=0){combatWin(r,c,mon);return}
+  const atkLabel=G.weapon.atk?` [${G.weapon.name} +${G.weapon.atk}]`:'';
+  enableDice(`⚔ ${mon.name} HP:${mon.hp}${mon.armor?' 🛡'+mon.armor:''}${atkLabel} — Кидай!`,val=>{
+    const eff=val+G.weapon.atk;
+    if(eff>=4){
+      // Player hits — check luck for bonus damage
+      let hitDmg=1;
+      const lucky=checkLuck();
+      if(lucky)hitDmg+=1;
+      let armMsg='';
+      if(mon.armor&&mon.armor>0){
+        const armAbs=Math.min(hitDmg,mon.armor);
+        mon.armor-=armAbs;
+        hitDmg-=armAbs;
+        if(armAbs>0)armMsg=` 🛡−${armAbs}`;
+      }
+      mon.hp-=hitDmg;
+      let m=`🎲${val}${G.weapon.atk?'+'+G.weapon.atk+'='+eff:''}`;
+      if(lucky)m+=` 🍀+1!`;
+      m+=` → Влучив!${armMsg} ${mon.name} HP:${Math.max(0,mon.hp)}${mon.armor?' 🛡'+mon.armor:''}`;
+      log(m,lucky?'luck':'loot');
+    }else{
+      const dmgMsg=takeDmg(dmg);
+      log(`🎲${val}${G.weapon.atk?'+'+G.weapon.atk+'='+eff:''} → ${mon.name} б'є! ${dmgMsg}`,'dmg');
+    }
+    renderGrid();updateHUD();
+    if(G.hp<=0){endGame(false);return}
+    if(mon.hp<=0){combatWin(r,c,mon);return}
+    setTimeout(()=>combatRound(r,c,mon,dmg),250);
+  });
+}
+
+function combatWin(r,c,mon){
+  log(`✅ ${mon.name} переможений!`,'loot');
+  G.clr[r][c]=true;
+  renderGrid();updateHUD();
+  if(G.dun.grid[r][c]===R.BOSS)endGame(true);
+}
+
+// ========== TRAP ==========
+function doTrap(r,c){
+  const trapDmg=G.dun.data[r][c]?G.dun.data[r][c].dmg:2;
+  enableDice(`⚠ Пастка (−${trapDmg}HP)! Кидай!`,val=>{
+    if(val>=4){log(`🎲${val} → Уникнув пастки!`,'loot')}
+    else{
+      const dmgMsg=takeDmg(trapDmg);
+      log(`🎲${val} → Пастка! ${dmgMsg}`,'dmg');
+    }
+    G.clr[r][c]=true;renderGrid();updateHUD();
+    if(G.hp<=0)endGame(false);
+  });
+}
+
+// ========== CHEST ==========
+function doChest(r,c){
+  enableDice('📦 Скриня! Що всередині?',val=>{
+    if(val===1){
+      const dmgMsg=takeDmg(2);
+      log(`🎲${val} → Пастка в скрині! ${dmgMsg}`,'dmg');
+    }else if(val<=3){
+      const g=Math.floor(Math.random()*3)+1;G.gold+=g;
+      log(`🎲${val} → Золото +${g}💰`,'loot');
+    }else if(val===4){
+      G.pot++;log(`🎲${val} → Зілля +1🧪`,'loot');
+    }else if(val===5){
+      G.luck++;log(`🎲${val} → 🍀 Талісман вдачі! Вдача: ${G.luck}`,'luck');
+    }else{
+      if(Math.random()<.5){
+        const tier=Math.floor(Math.random()*2)+1;
+        const w=WEAPONS[tier];
+        if(w.atk>G.weapon.atk){
+          log(`🎲${val} → ${w.icon} ${w.name}! (⚔${w.atk}) замінює ${G.weapon.name} (⚔${G.weapon.atk})`,'loot');
+          G.weapon={...w};
+        }else{
+          log(`🎲${val} → ${w.icon} ${w.name} (⚔${w.atk}) — слабше, пропущено`,'info');
+        }
+      }else{
+        const tier=Math.floor(Math.random()*2)+1;
+        const s=SHIELDS[tier];
+        addArmor(s.armor);
+        log(`🎲${val} → ${s.icon} ${s.name}! Броня +${s.armor} (🛡${G.armor})`,'loot');
+      }
+    }
+    G.clr[r][c]=true;renderGrid();updateHUD();
+    if(G.hp<=0)endGame(false);
+  });
+}
+
+// ========== LOOT ==========
+function doLoot(r,c,cd){
+  if(cd.type==='weapon'){
+    if(cd.atk>G.weapon.atk){
+      log(`${cd.icon} ${cd.name} (⚔${cd.atk})! Замінює ${G.weapon.name} (⚔${G.weapon.atk})`,'loot');
+      G.weapon={name:cd.name,icon:cd.icon,atk:cd.atk,tier:cd.lootTier};
+    }else if(cd.atk===G.weapon.atk){
+      log(`${cd.icon} ${cd.name} (⚔${cd.atk}) — такий самий, пропущено`,'info');
+    }else{
+      log(`${cd.icon} ${cd.name} (⚔${cd.atk}) — слабше за ${G.weapon.name} (⚔${G.weapon.atk}), пропущено`,'info');
+    }
+  }else if(cd.type==='luck'){
+    G.luck++;
+    log(`${cd.icon} ${cd.name}! Вдача: ${G.luck}`,'luck');
+  }else{
+    addArmor(cd.armor);
+    log(`${cd.icon} ${cd.name}! Броня +${cd.armor} (🛡${G.armor}/${G.maxArmor})`,'loot');
+  }
+  G.clr[r][c]=true;renderGrid();updateHUD();
+}
+
+// ========== HEAL ==========
+function doHeal(r,c){
+  const old=G.hp;
+  G.hp=Math.min(G.maxHp,G.hp+3);
+  log(`🧪 Зілля! +${G.hp-old}HP (${G.hp}/${G.maxHp})`,'heal');
+  G.clr[r][c]=true;renderGrid();updateHUD();
+}
+
+// ========== USE POTION (P key) ==========
+function usePotion(){
+  if(!G||G.state==='over'||G.pot<=0)return;
+  G.pot--;
+  const old=G.hp;
+  G.hp=Math.min(G.maxHp,G.hp+3);
+  log(`🧪 Зілля використано! +${G.hp-old}HP (${G.hp}/${G.maxHp})`,'heal');
+  updateHUD();
+}
+
+// ========== GAME OVER ==========
+function endGame(win){
+  G.state='over';
+  const el=document.getElementById('gameOver');
+  el.className='game-over '+(win?'win':'lose');
+  document.getElementById('goTitle').textContent=win?'🏆 ПЕРЕМОГА!':'💀 ПРОГРАШ';
+  document.getElementById('goText').textContent=win
+    ?`Підземелля пройдено! HP:${G.hp}/${G.maxHp} ${G.weapon.icon}${G.weapon.name} 🛡${G.armor} 🍀${G.luck} 💰${G.gold}`
+    :'Герой загинув у підземеллі...';
+  log(win?'🏆 ПЕРЕМОГА!':'💀 Герой загинув!',win?'win':'dmg');
+  disableDice();
+}
+
+// ========== MOVEMENT ==========
+function tryMove(dr,dc){
+  if(!G||G.state!=='move')return;
+  if(!canMove(dr,dc))return;
+  G.pr+=dr;G.pc+=dc;
+  enterCell();
+}
+
+// ========== KEYBOARD ==========
+document.addEventListener('keydown',e=>{
+  if(!G||G.state==='over')return;
+  // Potion
+  if(e.code==='KeyP'){e.preventDefault();usePotion();return}
+  // Dice
+  if(G.state==='dice'){
+    if(e.code==='Space'||e.code==='Enter'){e.preventDefault();rollDice()}
+    return;
+  }
+  // Movement
+  const m={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],KeyW:[-1,0],KeyS:[1,0],KeyA:[0,-1],KeyD:[0,1]};
+  if(m[e.code]){e.preventDefault();tryMove(...m[e.code])}
+});
+
+// ========== NEW GAME ==========
+function newGame(){
+  const theme=document.getElementById('theme').value;
+  const n=parseInt(document.getElementById('size').value);
+  const diff=document.getElementById('difficulty').value;
+  let seed=parseInt(document.getElementById('seed').value);
+  if(!seed||isNaN(seed)){seed=Math.floor(Math.random()*99999)+1;document.getElementById('seed').value=seed}
+
+  const rng=new RNG(seed);
+  const dun=genDungeon(rng,n,n,diff,theme);
+  const hp=diff==='easy'?12:diff==='hard'?8:10;
+
+  G={dun,theme,diff,seed,pr:0,pc:0,hp,maxHp:hp,weapon:{...WEAPONS[0]},armor:0,maxArmor:0,luck:0,gold:0,pot:0,
+    vis:Array.from({length:n},()=>Array(n).fill(false)),
+    clr:Array.from({length:n},()=>Array(n).fill(false)),
+    revealed:Array.from({length:n},()=>Array(n).fill(0)),
+    state:'move'};
+  G.vis[0][0]=true;
+  G.revealed[0][0]=2;
+
+  document.getElementById('log').innerHTML='';
+  document.getElementById('diceResult').textContent='🎲';
+  _diceCb=null;disableDice();
+
+  log(`🚪 ${TNAME[theme]}! HP:${hp} 🪵Палиця — Рухайся стрілками!`,'info');
+  renderGrid();updateHUD();
+  document.getElementById('seedDisplay').textContent=`Seed: ${seed}`;
+  document.getElementById('gameOver').className='game-over hidden';
+}
+
+window.addEventListener('DOMContentLoaded',newGame);
+</script>
+</body>
+</html>

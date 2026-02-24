@@ -142,6 +142,22 @@ export default defineEventHandler(() => {
                     Складайте падаючі блоки в лінії та набирайте очки!
                 </div>
             </a>
+
+            <a href="/games/tic-tac-toe" class="game-card">
+                <div class="game-icon">❌⭕</div>
+                <div class="game-title">Хрестики-Нулики</div>
+                <div class="game-description">
+                    Класична гра для двох гравців. Поставте три символи в ряд!
+                </div>
+            </a>
+
+            <a href="/games/dungeon-dice" class="game-card">
+                <div class="game-icon">⚔️🎲</div>
+                <div class="game-title">Dungeon Dice</div>
+                <div class="game-description">
+                    Рогалік з кубиком. Досліджуй підземелля, б'ися з монстрами та знаходь скарби!
+                </div>
+            </a>
         </div>
     </div>
 </body>
