@@ -38,4 +38,3 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: pixel-games
           directory: .output/public
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
