@@ -1,4 +1,5 @@
 export default defineNitroConfig({
+  preset: 'cloudflare_module',
   compatibilityDate: '2026-02-22',
   srcDir: '.',
   publicAssets: [
@@ -7,6 +8,10 @@ export default defineNitroConfig({
       dir: 'public',
     },
   ],
+  cloudflare: {
+    deployConfig: true,
+    nodeCompat: true,
+  },
   devServer: {
     watch: ['routes/**/*', 'public/**/*'],
   },
