@@ -116,11 +116,7 @@ function checkWinner() {
 
   for (const pattern of winPatterns) {
     const [a, b, c] = pattern;
-    if (
-      gameBoard[a] &&
-      gameBoard[a] === gameBoard[b] &&
-      gameBoard[a] === gameBoard[c]
-    ) {
+    if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
       return { winner: gameBoard[a], line: pattern };
     }
   }

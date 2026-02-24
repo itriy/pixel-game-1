@@ -166,13 +166,7 @@ function genDungeon(rng, cols, rows, diff, theme) {
   while (bi < bq.length) {
     const [br, bc] = bq[bi++];
     const tryD = (nr, nc) => {
-      if (
-        nr >= 0 &&
-        nr < rows &&
-        nc >= 0 &&
-        nc < cols &&
-        dist[nr][nc] === -1
-      ) {
+      if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && dist[nr][nc] === -1) {
         dist[nr][nc] = dist[br][bc] + 1;
         bq.push([nr, nc]);
       }
@@ -231,14 +225,12 @@ function genDungeon(rng, cols, rows, diff, theme) {
         const roll = rng2.next();
         if (roll < 0.35) {
           // Weapon
-          const tier =
-            zone > 0.65 ? rng2.int(2, 3) : zone > 0.3 ? rng2.int(1, 2) : 1;
+          const tier = zone > 0.65 ? rng2.int(2, 3) : zone > 0.3 ? rng2.int(1, 2) : 1;
           const w = WEAPONS[Math.min(tier, WEAPONS.length - 1)];
           data[r][c] = { type: 'weapon', lootTier: tier, ...w };
         } else if (roll < 0.65) {
           // Shield
-          const tier =
-            zone > 0.65 ? rng2.int(2, 3) : zone > 0.3 ? rng2.int(1, 2) : 1;
+          const tier = zone > 0.65 ? rng2.int(2, 3) : zone > 0.3 ? rng2.int(1, 2) : 1;
           const s = SHIELDS[Math.min(tier, SHIELDS.length - 1)];
           data[r][c] = { type: 'shield', lootTier: tier, ...s };
         } else {
@@ -388,11 +380,7 @@ function renderGrid() {
             icon = cd.icon;
             name = cd.name;
             stats =
-              cd.type === 'weapon'
-                ? '⚔' + cd.atk
-                : cd.type === 'luck'
-                  ? '🍀+1'
-                  : '🛡+' + cd.armor;
+              cd.type === 'weapon' ? '⚔' + cd.atk : cd.type === 'luck' ? '🍀+1' : '🛡+' + cd.armor;
             break;
           case R.HEAL:
             icon = '🧪';
@@ -548,19 +536,20 @@ function updateHUD() {
   }
 
   // Weapon
-  const weaponText = new PIXI.Text(
-    `${G.weapon.icon} ${G.weapon.name} (⚔${G.weapon.atk})`,
-    { fontSize: 16, fill: 0xc9a84c }
-  );
+  const weaponText = new PIXI.Text(`${G.weapon.icon} ${G.weapon.name} (⚔${G.weapon.atk})`, {
+    fontSize: 16,
+    fill: 0xc9a84c,
+  });
   weaponText.x = hudX;
   weaponText.y = hudY + 160;
   hudContainer.addChild(weaponText);
 
   // Stats
-  const stats = new PIXI.Text(
-    `💰 Золото: ${G.gold}\n🧪 Зілля: ${G.pot}\n🍀 Вдача: ${G.luck}`,
-    { fontSize: 16, fill: 0xffffff, lineHeight: 24 }
-  );
+  const stats = new PIXI.Text(`💰 Золото: ${G.gold}\n🧪 Зілля: ${G.pot}\n🍀 Вдача: ${G.luck}`, {
+    fontSize: 16,
+    fill: 0xffffff,
+    lineHeight: 24,
+  });
   stats.x = hudX;
   stats.y = hudY + 190;
   hudContainer.addChild(stats);
@@ -712,8 +701,7 @@ function takeDmg(amount) {
   remaining -= armorLost;
   G.hp -= remaining;
   let msg = `−${amount}`;
-  if (armorLost > 0 && remaining > 0)
-    msg += ` (🛡−${armorLost} ❤−${remaining})`;
+  if (armorLost > 0 && remaining > 0) msg += ` (🛡−${armorLost} ❤−${remaining})`;
   else if (armorLost > 0) msg += ` (🛡−${armorLost})`;
   else msg += ` ❤`;
   return msg;
@@ -733,12 +721,7 @@ function enterCell() {
   G.vis[r][c] = true;
   G.revealed[r][c] = 2;
 
-  if (
-    G.clr[r][c] ||
-    t === R.START ||
-    t === R.NORMAL ||
-    t === R.EMPTY
-  ) {
+  if (G.clr[r][c] || t === R.START || t === R.NORMAL || t === R.EMPTY) {
     renderGrid();
     return;
   }
@@ -782,9 +765,7 @@ function combatRound(r, c, mon, dmg) {
     combatWin(r, c, mon);
     return;
   }
-  const atkLabel = G.weapon.atk
-    ? ` [${G.weapon.name} +${G.weapon.atk}]`
-    : '';
+  const atkLabel = G.weapon.atk ? ` [${G.weapon.name} +${G.weapon.atk}]` : '';
   enableDice(
     `⚔ ${mon.name} HP:${mon.hp}${mon.armor ? ' 🛡' + mon.armor : ''}${atkLabel} — Кидай!`,
     (val) => {
@@ -880,19 +861,13 @@ function doChest(r, c) {
           );
           G.weapon = { ...w };
         } else {
-          log(
-            `🎲${val} → ${w.icon} ${w.name} (⚔${w.atk}) — слабше, пропущено`,
-            'info'
-          );
+          log(`🎲${val} → ${w.icon} ${w.name} (⚔${w.atk}) — слабше, пропущено`, 'info');
         }
       } else {
         const tier = Math.floor(Math.random() * 2) + 1;
         const s = SHIELDS[tier];
         addArmor(s.armor);
-        log(
-          `🎲${val} → ${s.icon} ${s.name}! Броня +${s.armor} (🛡${G.armor})`,
-          'loot'
-        );
+        log(`🎲${val} → ${s.icon} ${s.name}! Броня +${s.armor} (🛡${G.armor})`, 'loot');
       }
     }
     G.clr[r][c] = true;
@@ -917,10 +892,7 @@ function doLoot(r, c, cd) {
         tier: cd.lootTier,
       };
     } else if (cd.atk === G.weapon.atk) {
-      log(
-        `${cd.icon} ${cd.name} (⚔${cd.atk}) — такий самий, пропущено`,
-        'info'
-      );
+      log(`${cd.icon} ${cd.name} (⚔${cd.atk}) — такий самий, пропущено`, 'info');
     } else {
       log(
         `${cd.icon} ${cd.name} (⚔${cd.atk}) — слабше за ${G.weapon.name} (⚔${G.weapon.atk}), пропущено`,
@@ -932,10 +904,7 @@ function doLoot(r, c, cd) {
     log(`${cd.icon} ${cd.name}! Вдача: ${G.luck}`, 'luck');
   } else {
     addArmor(cd.armor);
-    log(
-      `${cd.icon} ${cd.name}! Броня +${cd.armor} (🛡${G.armor}/${G.maxArmor})`,
-      'loot'
-    );
+    log(`${cd.icon} ${cd.name}! Броня +${cd.armor} (🛡${G.armor}/${G.maxArmor})`, 'loot');
   }
   G.clr[r][c] = true;
   renderGrid();
@@ -1001,13 +970,7 @@ function endGame(win) {
 
   const restartBtn = new PIXI.Graphics();
   restartBtn.beginFill(0x8a7333);
-  restartBtn.drawRoundedRect(
-    app.screen.width / 2 - 100,
-    app.screen.height / 2 + 80,
-    200,
-    50,
-    5
-  );
+  restartBtn.drawRoundedRect(app.screen.width / 2 - 100, app.screen.height / 2 + 80, 200, 50, 5);
   restartBtn.endFill();
   restartBtn.interactive = true;
   restartBtn.buttonMode = true;
